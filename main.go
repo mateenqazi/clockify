@@ -1,8 +1,8 @@
 package main
 
 import (
-	"clockify/models"
 	"clockify/storage"
+	"fmt"
 	"log"
 	"os"
 
@@ -30,20 +30,27 @@ func main() {
 		log.Fatal("could not load the database")
 	}
 
-	err = models.MigrateUser(db)
-	if err != nil {
-		log.Fatal("could not migrate db")
-	}
+	fmt.Println(db)
 
-	err = models.MigrateProject(db)
-	if err != nil {
-		log.Fatal("could not migrate db")
-	}
+	/*
+		// migration of user table
+		err = models.MigrateUser(db)
+		if err != nil {
+			log.Fatal("could not migrate db")
+		}
 
-	err = models.MigrateActivities(db)
-	if err != nil {
-		log.Fatal("could not migrate db")
-	}
+		// migration of project table
+		err = models.MigrateProject(db)
+		if err != nil {
+			log.Fatal("could not migrate db")
+		}
+
+		// migration of activities table
+		err = models.MigrateActivities(db)
+		if err != nil {
+			log.Fatal("could not migrate db")
+		}
+	*/
 
 	app := fiber.New()
 	app.Listen(":8080")
