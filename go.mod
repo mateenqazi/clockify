@@ -32,5 +32,5 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.2 // indirect
+	gorm.io/gorm v1.25.2
 )
