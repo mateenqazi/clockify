@@ -2,6 +2,7 @@ package main
 
 import (
 	"clockify/helpers"
+	"clockify/projects"
 	"clockify/storage"
 	"clockify/types"
 	"clockify/users"
@@ -38,6 +39,7 @@ func main() {
 
 	// initialization services
 	userService := users.NewUserService(db)
+	projectService := projects.NewUserService(db)
 
 	// register user
 	creds := types.Credentials{
@@ -58,13 +60,59 @@ func main() {
 
 	// login user
 	helpers.FormatMessage("Login Service Started")
+
 	creds = types.Credentials{
 		Email:    "mat1@gmail.com",
 		Password: "securepassword",
 	}
-	userService.LoginUser(creds)
+
+	user, err := userService.LoginUser(creds)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("you are login with ", user.Email)
 
 	helpers.FormatMessage("Login Service Ended")
+
+	helpers.FormatMessage("Create New Project Service Started")
+
+	project := types.Project{
+		Name:       "Project 9",
+		ClientName: "Test Client",
+		UserId:     user.ID,
+	}
+
+	proj, err := projectService.CreateNewProject(project)
+	if err != nil {
+		fmt.Println("Error rise Register User ", err)
+	}
+
+	fmt.Println(proj)
+
+	helpers.FormatMessage("Create New Project Service Ended")
+
+	helpers.FormatMessage("Search Project Service Started")
+
+	searchKeyword := "8"
+	searchResult, err := projectService.SearchProject(searchKeyword, user.ID)
+	if err != nil {
+		fmt.Println("Error rise Register User ", err)
+	}
+
+	fmt.Println(searchResult)
+
+	helpers.FormatMessage("Search Project Service Ended")
+
+	helpers.FormatMessage("Delete Project Service Started")
+
+	deleteSuccessfully, err := projectService.DeleteProject(searchResult[0].Name, user.ID)
+	if err != nil {
+		fmt.Println("Error rise Delete Project ", err)
+	}
+
+	fmt.Println(deleteSuccessfully)
+	helpers.FormatMessage("Delete Project Service Ended")
 
 	// migration
 	// helpers.MigrateTable(db)

@@ -45,6 +45,8 @@ func MigrateTable(db *gorm.DB) {
 	if err != nil {
 		log.Fatal("could not migrate db")
 	}
+
+	fmt.Println("Migration Successfully!")
 }
 
 func ComparePassword(plainPassword string, userPassword string) bool {

@@ -14,8 +14,8 @@ type Activities struct {
 	EndTime      time.Time `json:"endTime"`
 	ProjectId    int       `json:"projectId"`
 	UserId       int       `json:"userId"`
-	User         User      `gorm:"foreignKey:UserId"`
-	Project      Project   `gorm:"foreignKey:ProjectId"`
+	User         User      `gorm:"foreignKey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Project      Project   `gorm:"foreignKey:ProjectId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func MigrateActivities(db *gorm.DB) error {
