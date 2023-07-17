@@ -1,6 +1,7 @@
 package main
 
 import (
+	"clockify/activities"
 	"clockify/helpers"
 	"clockify/projects"
 	"clockify/storage"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -39,7 +41,8 @@ func main() {
 
 	// initialization services
 	userService := users.NewUserService(db)
-	projectService := projects.NewUserService(db)
+	projectService := projects.NewProjectService(db)
+	activitiesService := activities.NewActivitiesService(db)
 
 	// register user
 	creds := types.Credentials{
@@ -78,7 +81,7 @@ func main() {
 	helpers.FormatMessage("Create New Project Service Started")
 
 	project := types.Project{
-		Name:       "Project 9",
+		Name:       "Project 14",
 		ClientName: "Test Client",
 		UserId:     user.ID,
 	}
@@ -104,14 +107,37 @@ func main() {
 
 	helpers.FormatMessage("Search Project Service Ended")
 
-	helpers.FormatMessage("Delete Project Service Started")
+	helpers.FormatMessage("Create Activities Service Started")
+	act := types.Activities{
+		Name:      "First Activity",
+		StartTime: time.Now(),
+		EndTime:   time.Now().Add(2 * time.Hour),
+	}
+	act.TimeDuration = act.EndTime.Sub(act.StartTime)
+	act.UserId = 2
+	act.ProjectId = 15
 
-	deleteSuccessfully, err := projectService.DeleteProject(searchResult[0].Name, user.ID)
+	fmt.Println(act)
+
+	check, err := activitiesService.CreateActivities(act)
 	if err != nil {
 		fmt.Println("Error rise Delete Project ", err)
 	}
 
-	fmt.Println(deleteSuccessfully)
+	fmt.Println(check)
+	helpers.FormatMessage("Create Activities Service Ended")
+
+	helpers.FormatMessage("Delete Project Service Started")
+
+	if len(searchResult) > 0 {
+		deleteSuccessfully, err := projectService.DeleteProject(searchResult[0].Name, user.ID)
+		if err != nil {
+			fmt.Println("Error rise Delete Project ", err)
+		}
+
+		fmt.Println(deleteSuccessfully)
+	}
+
 	helpers.FormatMessage("Delete Project Service Ended")
 
 	// migration

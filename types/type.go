@@ -21,3 +21,12 @@ type Project struct {
 	UserId     int
 	CreatedAt  time.Time
 }
+
+type Activities struct {
+	Name         string
+	TimeDuration time.Duration
+	StartTime    time.Time
+	EndTime      time.Time
+	ProjectId    int
+	UserId       int
+}

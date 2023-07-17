@@ -14,7 +14,7 @@ type ProjectService struct {
 	db *gorm.DB
 }
 
-func NewUserService(db *gorm.DB) *ProjectService {
+func NewProjectService(db *gorm.DB) *ProjectService {
 	return &ProjectService{
 		db: db,
 	}
