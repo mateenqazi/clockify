@@ -66,6 +66,9 @@ func main() {
 
 	helpers.FormatMessage("Login Service Ended")
 
+	// delete user
+	// userService.DeleteUser(1)
+
 	// migration
 	// helpers.MigrateTable(db)
 

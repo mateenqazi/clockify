@@ -73,5 +73,16 @@ func (s *UserService) LoginUser(creds types.Credentials) (models.User, error) {
 		}
 	}
 	fmt.Println("Login Sucessfully!")
+
 	return result, nil
+}
+
+func (s *UserService) DeleteUser(UserId int) (bool, error) {
+	var user models.User
+
+	if err := s.db.Where("id = ?", UserId).Delete(&user); err.Error != nil {
+		return false, errors.New("delete failed")
+	}
+
+	return true, nil
 }
