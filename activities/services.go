@@ -32,7 +32,14 @@ func (s *ActivitiesService) GetAllActitives(userId int) ([]models.Activities, er
 }
 
 func (s *ActivitiesService) CreateActivities(act types.Activities) (bool, error) {
-	var activities models.Activities
+	activities := models.Activities{
+		Name:         act.Name,
+		TimeDuration: act.TimeDuration,
+		StartTime:    act.StartTime,
+		EndTime:      act.EndTime,
+		UserId:       act.UserId,
+		ProjectId:    act.ProjectId,
+	}
 
 	if act.Name == "" {
 		return false, errors.New("empty field are not allowed")

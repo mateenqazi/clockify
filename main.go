@@ -81,7 +81,7 @@ func main() {
 	helpers.FormatMessage("Create New Project Service Started")
 
 	project := types.Project{
-		Name:       "Project 14",
+		Name:       "Project 1",
 		ClientName: "Test Client",
 		UserId:     user.ID,
 	}
@@ -114,8 +114,8 @@ func main() {
 		EndTime:   time.Now().Add(2 * time.Hour),
 	}
 	act.TimeDuration = act.EndTime.Sub(act.StartTime)
-	act.UserId = 2
-	act.ProjectId = 15
+	act.UserId = user.ID
+	act.ProjectId = 1
 
 	fmt.Println(act)
 
