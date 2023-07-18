@@ -81,7 +81,7 @@ func main() {
 	helpers.FormatMessage("Create New Project Service Started")
 
 	project := types.Project{
-		Name:       "Project 1",
+		Name:       "Project 9",
 		ClientName: "Test Client",
 		UserId:     user.ID,
 	}
@@ -109,7 +109,7 @@ func main() {
 
 	helpers.FormatMessage("Create Activities Service Started")
 	act := types.Activities{
-		Name:      "First Activity",
+		Name:      "Second Activity",
 		StartTime: time.Now(),
 		EndTime:   time.Now().Add(2 * time.Hour),
 	}
@@ -117,15 +117,23 @@ func main() {
 	act.UserId = user.ID
 	act.ProjectId = 1
 
-	fmt.Println(act)
-
 	check, err := activitiesService.CreateActivities(act)
 	if err != nil {
-		fmt.Println("Error rise Delete Project ", err)
+		fmt.Println("Error Rise Create Activities ", err)
 	}
 
 	fmt.Println(check)
 	helpers.FormatMessage("Create Activities Service Ended")
+
+	helpers.FormatMessage("Duplicate Activities Service Started")
+
+	duplicate, err := activitiesService.DuplicateActivity(5)
+	if err != nil {
+		fmt.Println("Error Rise Duplicate Activities ", err)
+	}
+
+	fmt.Println(duplicate)
+	helpers.FormatMessage("Duplicate Activities Service Ended")
 
 	helpers.FormatMessage("Delete Project Service Started")
 
@@ -139,6 +147,17 @@ func main() {
 	}
 
 	helpers.FormatMessage("Delete Project Service Ended")
+
+	helpers.FormatMessage("Delete Activities Service Started")
+
+	del, err := activitiesService.DeleteActivity(2)
+	if err != nil {
+		fmt.Println("Error Rise Delete Activities ", err)
+	}
+
+	fmt.Println(del)
+
+	helpers.FormatMessage("Delete Activities Service Ended")
 
 	// migration
 	// helpers.MigrateTable(db)

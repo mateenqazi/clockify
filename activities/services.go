@@ -1,7 +1,6 @@
 package activities
 
 import (
-	"clockify/helpers"
 	"clockify/models"
 	"errors"
 	"fmt"
@@ -45,32 +44,24 @@ func (s *ActivitiesService) CreateActivities(act types.Activities) (bool, error)
 		return false, errors.New("empty field are not allowed")
 	}
 
-	fmt.Println(act)
-
 	result := s.db.Create(&activities)
-	fmt.Println("Error==>", result.Error)
 	if result.Error != nil {
 		panic("Failed to save data into the database!")
 	}
+	fmt.Printf("activities %T ", activities)
 	fmt.Println("Activities saved successfully!", activities)
 
 	return false, nil
 }
 
-func (s *ActivitiesService) LoginUser(creds types.Credentials) (models.User, error) {
-	emptyUser := models.User{}
-	ok, result, _ := helpers.IsEmailExists(s.db, creds.Email)
+func (s *ActivitiesService) DeleteActivity(na int) (bool, error) {
+	var activities []models.Activities
 
-	if ok {
-		if !helpers.ComparePassword(creds.Password, result.Password) {
-			fmt.Println("Password Does not Match")
-			fmt.Println("Login Failed!")
-			return emptyUser, errors.New("password does not matched")
-		}
+	if err := s.db.Delete(activities, na); err.Error != nil {
+		return false, errors.New("delete failed")
 	}
-	fmt.Println("Login Sucessfully!")
-
-	return result, nil
+	fmt.Println("Delete Successfully!")
+	return true, nil
 }
 
 func (s *ActivitiesService) UpdateName(id int, activityName string) (bool, error) {
@@ -90,12 +81,31 @@ func (s *ActivitiesService) UpdateName(id int, activityName string) (bool, error
 
 func (s *ActivitiesService) DuplicateActivity(id int) (bool, error) {
 	activities := models.Activities{}
+	newActivities := models.Activities{}
 
-	if err := s.db.First(&activities, id); err != nil {
-		return false, errors.New("error occurred while updating the name")
+	if err := s.db.Where("id = ?", id).First(&activities).Error; err != nil {
+		return false, errors.New("duplicate failed")
 	}
 
-	fmt.Println("Updated Successfully!")
+	newActivities.Name = activities.Name
+	newActivities.EndTime = activities.EndTime
+	newActivities.StartTime = activities.StartTime
+	newActivities.TimeDuration = activities.TimeDuration
+	newActivities.UserId = activities.UserId
+	newActivities.ProjectId = activities.ProjectId
+
+	result := s.db.Create(&newActivities)
+
+	fmt.Println("Duplicated Successfully!", result)
 
 	return true, nil
+}
+
+func (s *ActivitiesService) SearchActivities(searchKeyword string, UserId int) ([]models.Activities, error) {
+	var activities []models.Activities
+
+	if err := s.db.Where("name ILIKE ? AND User_id = ?", "%"+searchKeyword+"%", UserId).Find(&activities).Error; err != nil {
+		return activities, errors.New("search failed")
+	}
+	return activities, nil
 }
