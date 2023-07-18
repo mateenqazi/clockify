@@ -8,7 +8,7 @@ import (
 
 type Activities struct {
 	ID           int           `gorm:"primary key; autoIncrement" json:"id"`
-	Name         string        `json:"name"`
+	Name         string        `json:"name" gorm:"uniqueIndex"`
 	TimeDuration time.Duration `json:"timeDuration"`
 	StartTime    time.Time     `json:"startTime"`
 	EndTime      time.Time     `json:"endTime"`
