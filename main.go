@@ -2,10 +2,10 @@ package main
 
 import (
 	"clockify/helpers"
+	"clockify/projects"
 	"clockify/storage"
 	"clockify/types"
 	"clockify/users"
-	"fmt"
 	"log"
 	"os"
 
@@ -36,24 +36,24 @@ func main() {
 		log.Fatal("could not load the database")
 	}
 
-	log.Println(db)
 	// initialization services
 	userService := users.NewUserService(db)
+	projectService := projects.NewUserService(db)
 
 	// register user
 	creds := types.Credentials{
-		Email:    "mat12@gmail.com",
-		Password: "securepassword1",
+		Email:    "mat1@gmail.com",
+		Password: "securepassword",
 	}
 
 	helpers.FormatMessage("Register Service Started")
 
 	result, err := userService.RegisterUser(creds)
 	if err != nil {
-		fmt.Println("Error rise Register User ", err)
+		log.Fatal("Error rise Register User ", err)
 	}
 
-	fmt.Println(result)
+	log.Println(result)
 
 	helpers.FormatMessage("Register Service Ended")
 
@@ -63,15 +63,57 @@ func main() {
 		Email:    "mat1@gmail.com",
 		Password: "securepassword",
 	}
-	userService.LoginUser(creds)
+
+	user, err := userService.LoginUser(creds)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println("you are login with ", user.Email)
 
 	helpers.FormatMessage("Login Service Ended")
 
-	// delete user
-	userService.DeleteUser(3)
+	helpers.FormatMessage("Create New Project Service Started")
+
+	project := types.Project{
+		Name:       "Project 9",
+		ClientName: "Test Client",
+		UserId:     user.ID,
+	}
+
+	proj, err := projectService.CreateNewProject(project)
+	if err != nil {
+		log.Fatal("Error rise Register User ", err)
+	}
+
+	log.Println(proj)
+
+	helpers.FormatMessage("Create New Project Service Ended")
+
+	helpers.FormatMessage("Search Project Service Started")
+
+	searchKeyword := "8"
+	searchResult, err := projectService.SearchProject(searchKeyword, user.ID)
+	if err != nil {
+		log.Fatal("Error rise Register User ", err)
+	}
+
+	log.Println(searchResult)
+
+	helpers.FormatMessage("Search Project Service Ended")
+
+	helpers.FormatMessage("Delete Project Service Started")
+
+	deleteSuccessfully, err := projectService.DeleteProject(searchResult[0].Name, user.ID)
+	if err != nil {
+		log.Println("Error rise Delete Project ", err)
+	}
+
+	log.Println(deleteSuccessfully)
+	helpers.FormatMessage("Delete Project Service Ended")
 
 	// migration
-	// helpers.MigrateModels(db)
+	// helpers.MigrateTable(db)
 
 	app := fiber.New()
 	app.Listen(":8080")
