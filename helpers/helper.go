@@ -2,8 +2,10 @@ package helpers
 
 import (
 	"clockify/models"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"net/mail"
 
 	"golang.org/x/crypto/bcrypt"
@@ -51,4 +53,10 @@ func IsValidEmail(email string) bool {
 
 func FormatMessage(mess string) {
 	fmt.Printf("\n\n***********   %v  ***********\n\n", mess)
+}
+
+func SendJSONResponse(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
 }

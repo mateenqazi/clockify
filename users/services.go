@@ -5,6 +5,7 @@ import (
 	"clockify/models"
 	"errors"
 	"log"
+	"net/http"
 
 	"clockify/types"
 
@@ -21,14 +22,16 @@ func NewUserService(db *gorm.DB) *UserService {
 	}
 }
 
-func (s *UserService) GetAllUser() ([]models.User, error) {
+func (s *UserService) GetAllUser(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 
 	if err := s.db.Model(&users).Find(&users).Error; err != nil {
-		return nil, err
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	return users, nil
+	helpers.SendJSONResponse(w, http.StatusOK, users)
+
 }
 
 func (s *UserService) RegisterUser(creds types.Credentials) (bool, error) {

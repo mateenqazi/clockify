@@ -7,11 +7,11 @@ import (
 )
 
 type Project struct {
-	ID         int       `gorm:"primary key; autoIncrement" db:"id"`
-	Name       string    `db:"name" gorm:"uniqueIndex"`
-	UserId     string    `db:"user_id"`
-	CreatedAt  time.Time `db:"created_at"`
-	ClientName string    `db:"client_name"`
+	ID         int       `gorm:"primary key; autoIncrement" db:"id" json:"id"`
+	Name       string    `db:"name" gorm:"uniqueIndex" json:"name"`
+	UserId     string    `db:"user_id" json:"user_id"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	ClientName string    `db:"client_name" json:"client_name"`
 	User       User      `gorm:"foreignKey:UserId"`
 }
 
