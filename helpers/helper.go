@@ -3,7 +3,6 @@ package helpers
 import (
 	"clockify/models"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/mail"
@@ -49,10 +48,6 @@ func HashPassword(password string) (string, error) {
 func IsValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
-}
-
-func FormatMessage(mess string) {
-	fmt.Printf("\n\n***********   %v  ***********\n\n", mess)
 }
 
 func SendJSONResponse(w http.ResponseWriter, status int, data interface{}) {
