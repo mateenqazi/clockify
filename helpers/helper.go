@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
+	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -54,4 +55,22 @@ func SendJSONResponse(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
+}
+
+func ConvertValueIntoInt(userIdData interface{}) (int, error) {
+	switch v := userIdData.(type) {
+	case int:
+		return v, nil
+	case float64:
+		return int(v), nil
+	case string:
+		id, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, err
+		}
+		return id, nil
+	default:
+		return 0, http.ErrNotSupported // You can use a custom error here if you prefer.
+	}
+
 }
