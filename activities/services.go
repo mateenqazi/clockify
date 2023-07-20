@@ -1,12 +1,15 @@
 package activities
 
 import (
+	"clockify/helpers"
 	"clockify/models"
+	"clockify/types"
+	"encoding/json"
 	"errors"
 	"log"
+	"net/http"
 
-	"clockify/types"
-
+	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
@@ -20,27 +23,55 @@ func NewActivitiesService(db *gorm.DB) *ActivitiesService {
 	}
 }
 
-func (s *ActivitiesService) GetAllActitives(userId int) ([]models.Activities, error) {
+func (s *ActivitiesService) GetAllActitives(w http.ResponseWriter, r *http.Request) {
 	var activities []models.Activities
+	userId := mux.Vars(r)["userid"]
+
+	if userId == "" {
+		log.Println("user id is missing")
+		http.Error(w, "user id is missing", http.StatusBadRequest)
+		return
+	}
 
 	if err := s.db.Model(&activities).Where("User_id = ?", userId).Find(&activities).Error; err != nil {
-		return activities, errors.New("get all activities failed")
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	return activities, nil
+	helpers.SendJSONResponse(w, http.StatusOK, activities)
 }
 
-func (s *ActivitiesService) CreateActivities(act types.Activities) (bool, error) {
-	activities := models.Activities{
-		Name:         act.Name,
-		TimeDuration: act.TimeDuration,
-		StartTime:    act.StartTime,
-		EndTime:      act.EndTime,
-		UserId:       act.UserId,
-		ProjectId:    act.ProjectId,
+func (s *ActivitiesService) CreateActivities(w http.ResponseWriter, r *http.Request) {
+
+	var data map[string]interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	if act.Name == "" {
+	name := data["name"].(string)
+	timeDuration := data["timeDuration"]
+	startTime := data["StartTime"]
+	endTime := data["EndTime"]
+	userId := data["UserId"]
+	projectId := data["ProjectId"]
+
+	userIdInt, _ := helpers.ConvertValueIntoInt(userId)
+	projectIdInt, _ := helpers.ConvertValueIntoInt(projectId)
+
+	activities := models.Activities{
+		Name:         name,
+		TimeDuration: timeDuration,
+		StartTime:    startTime,
+		EndTime:      endTime,
+		UserId:       userIdInt,
+		ProjectId:    projectIdInt,
+	}
+
+	if name == "" {
 		return false, errors.New("empty field are not allowed")
 	}
 
@@ -52,18 +83,64 @@ func (s *ActivitiesService) CreateActivities(act types.Activities) (bool, error)
 	log.Println("Activities saved successfully!", activities)
 
 	return false, nil
-}
 
-func (s *ActivitiesService) DeleteActivity(na int) (bool, error) {
-	var activities []models.Activities
+	//dkdkdkkdkdkkdkdkdkdkdkddkkdkdkdkdkkdkdkdkdkdkkdkdkdkd
 
-	if err := s.db.Model(&activities).Delete(&activities, na); err.Error != nil {
-		return false, errors.New("delete failed")
+	name := data["name"].(string)
+	clientName := data["clientName"].(string)
+	userId := data["userId"]
+
+	userIdInt, _ := helpers.ConvertValueIntoInt(userId)
+
+	projects := types.Project{
+		Name:       name,
+		ClientName: clientName,
+		UserId:     userIdInt,
 	}
 
-	log.Println("Delete Successfully!")
+	log.Println(projects)
 
-	return true, nil
+	if name == "" || clientName == "" {
+		http.Error(w, "empty fields are not allowed", http.StatusBadRequest)
+		return
+	}
+
+	if !(userIdInt > 0) {
+		http.Error(w, "userid is missing", http.StatusBadRequest)
+		return
+	}
+
+	result := s.db.Model(&projects).Create(&projects)
+	if result.Error != nil {
+		http.Error(w, "Failed to save data into the database!", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("Project saved successfully!")
+
+	helpers.SendJSONResponse(w, http.StatusOK, result)
+}
+
+func (s *ActivitiesService) DeleteActivity(w http.ResponseWriter, r *http.Request) {
+	var activities []models.Activities
+
+	activityId := mux.Vars(r)["id"]
+
+	if activityId == "" {
+		log.Println("delete failed")
+		http.Error(w, "activity id is empty", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.db.Model(&activities).Delete(&activities, activityId); err.Error != nil {
+		log.Println("delete failed")
+		http.Error(w, "something went wrong", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("Activities Delete Successfully!")
+
+	helpers.SendJSONResponse(w, http.StatusNoContent, nil)
 }
 
 func (s *ActivitiesService) UpdateName(id int, activityName string) (bool, error) {
