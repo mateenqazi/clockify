@@ -41,7 +41,7 @@ func (s *ProjectService) CreateNewProject(w http.ResponseWriter, r *http.Request
 
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		log.Println("mateen", err)
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
