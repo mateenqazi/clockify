@@ -1,12 +1,13 @@
 package activities
 
 import (
+	"clockify/helpers"
 	"clockify/models"
-	"errors"
+	"encoding/json"
 	"log"
+	"net/http"
 
-	"clockify/types"
-
+	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
@@ -20,76 +21,158 @@ func NewActivitiesService(db *gorm.DB) *ActivitiesService {
 	}
 }
 
-func (s *ActivitiesService) GetAllActitives(userId int) ([]models.Activities, error) {
+func (s *ActivitiesService) GetAllActitives(w http.ResponseWriter, r *http.Request) {
 	var activities []models.Activities
 
-	if err := s.db.Model(&activities).Where("User_id = ?", userId).Find(&activities).Error; err != nil {
-		return activities, errors.New("get all activities failed")
+	queryParams := r.URL.Query()
+
+	// Access individual query parameters using Get() method
+	userId := queryParams.Get("userId")
+
+	if userId == "" {
+		log.Println("user id is missing")
+		http.Error(w, "user id is missing", http.StatusBadRequest)
+		return
 	}
 
-	return activities, nil
+	if err := s.db.Model(&activities).Where("User_id = ?", userId).Find(&activities).Error; err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	helpers.SendJSONResponse(w, http.StatusOK, activities)
 }
 
-func (s *ActivitiesService) CreateActivities(act types.Activities) (bool, error) {
-	activities := models.Activities{
-		Name:         act.Name,
-		TimeDuration: act.TimeDuration,
-		StartTime:    act.StartTime,
-		EndTime:      act.EndTime,
-		UserId:       act.UserId,
-		ProjectId:    act.ProjectId,
+func (s *ActivitiesService) CreateActivities(w http.ResponseWriter, r *http.Request) {
+	var data map[string]interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	if act.Name == "" {
-		return false, errors.New("empty field are not allowed")
+	name := data["name"].(string)
+	timeDuration := data["timeDuration"]
+	startTime := data["startTime"]
+	endTime := data["endTime"]
+	userId := data["userId"]
+	projectId := data["projectId"]
+
+	userIdInt, _ := helpers.ConvertValueIntoInt(userId)
+	projectIdInt, _ := helpers.ConvertValueIntoInt(projectId)
+	timeDurationValue, _ := helpers.ConvertValueIntoTimeDuration(timeDuration)
+	startTimeValue, _ := helpers.ConvertValueToTime(startTime)
+	endTimeValue, _ := helpers.ConvertValueToTime(endTime)
+
+	activities := models.Activities{
+		Name:         name,
+		TimeDuration: timeDurationValue,
+		StartTime:    startTimeValue,
+		EndTime:      endTimeValue,
+		UserId:       userIdInt,
+		ProjectId:    projectIdInt,
+	}
+
+	if name == "" {
+		http.Error(w, "empty fields are not allowed", http.StatusBadRequest)
+		return
+	}
+
+	if !(userIdInt > 0) {
+		http.Error(w, "user id is missing", http.StatusBadRequest)
+		return
+	}
+
+	if !(projectIdInt > 0) {
+		http.Error(w, "project id is missing", http.StatusBadRequest)
+		return
 	}
 
 	result := s.db.Model(&activities).Create(&activities)
 	if result.Error != nil {
-		panic("Failed to save data into the database!")
+		http.Error(w, "Failed to save data into the database!", http.StatusBadRequest)
+		return
 	}
 
-	log.Println("Activities saved successfully!", activities)
+	log.Println("Activities saved successfully!")
 
-	return false, nil
+	helpers.SendJSONResponse(w, http.StatusOK, activities)
 }
 
-func (s *ActivitiesService) DeleteActivity(na int) (bool, error) {
+func (s *ActivitiesService) DeleteActivity(w http.ResponseWriter, r *http.Request) {
 	var activities []models.Activities
 
-	if err := s.db.Model(&activities).Delete(&activities, na); err.Error != nil {
-		return false, errors.New("delete failed")
+	activityId := mux.Vars(r)["id"]
+
+	if activityId == "" {
+		log.Println("delete failed")
+		http.Error(w, "activity id is empty", http.StatusBadRequest)
+		return
 	}
 
-	log.Println("Delete Successfully!")
+	if err := s.db.Model(&activities).Delete(&activities, activityId); err.Error != nil {
+		log.Println("delete failed")
+		http.Error(w, "something went wrong", http.StatusBadRequest)
+		return
+	}
 
-	return true, nil
+	log.Println("Activities Delete Successfully!")
+
+	helpers.SendJSONResponse(w, http.StatusNoContent, nil)
 }
 
-func (s *ActivitiesService) UpdateName(id int, activityName string) (bool, error) {
+func (s *ActivitiesService) UpdateName(w http.ResponseWriter, r *http.Request) {
+	var data map[string]interface{}
 
-	if activityName == "" {
-		return false, errors.New("empty name is not allowed")
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	if err := s.db.Model(&models.Activities{}).Where("id = ?", id).Update("name", activityName).Error; err != nil {
-		return false, errors.New("error occurred while updating the name")
+	name := data["name"].(string)
+	id := data["id"]
+
+	if name == "" {
+		log.Println("name is missing")
+		http.Error(w, "name is missing", http.StatusBadRequest)
+		return
+	}
+
+	if id == "" {
+		log.Println("user id is missing")
+		http.Error(w, "user id is missing", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.db.Model(&models.Activities{}).Where("id = ?", id).Update("name", name).Error; err != nil {
+		http.Error(w, "Failed to save data into the database!", http.StatusBadRequest)
+		return
 	}
 
 	log.Println("Updated Successfully!")
 
-	return true, nil
+	helpers.SendJSONResponse(w, http.StatusOK, "update Sucessfully")
 }
 
-func (s *ActivitiesService) DuplicateActivity(id int) (bool, error) {
+func (s *ActivitiesService) DuplicateActivity(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+
+	// Access individual query parameters using Get() method
+	id := queryParams.Get("id")
+
 	activities := models.Activities{}
 	newActivities := models.Activities{}
 
 	if err := s.db.Model(&activities).Where("id = ?", id).First(&activities).Error; err != nil {
-		return false, errors.New("duplicate failed")
+		log.Println("duplicated failed")
+		http.Error(w, "duplicated failed", http.StatusBadRequest)
+		return
 	}
 
-	newActivities.Name = activities.Name
+	newActivities.Name = activities.Name + " (copy)"
 	newActivities.EndTime = activities.EndTime
 	newActivities.StartTime = activities.StartTime
 	newActivities.TimeDuration = activities.TimeDuration
@@ -98,20 +181,30 @@ func (s *ActivitiesService) DuplicateActivity(id int) (bool, error) {
 
 	result := s.db.Model(&newActivities).Create(&newActivities)
 	if result.Error != nil {
-		log.Fatal("create failed")
+		log.Println("create failed")
+		http.Error(w, "create failed", http.StatusBadRequest)
+		return
 	}
 
 	log.Println("Duplicated Successfully!", result)
 
-	return true, nil
+	helpers.SendJSONResponse(w, http.StatusOK, newActivities)
 }
 
-func (s *ActivitiesService) SearchActivities(searchKeyword string, UserId int) ([]models.Activities, error) {
+func (s *ActivitiesService) SearchActivities(w http.ResponseWriter, r *http.Request) {
 	var activities []models.Activities
 
-	if err := s.db.Model(&activities).Where("name ILIKE ? AND User_id = ?", "%"+searchKeyword+"%", UserId).Find(&activities).Error; err != nil {
-		return activities, errors.New("search failed")
+	queryParams := r.URL.Query()
+
+	// Access individual query parameters using Get() method
+	query := queryParams.Get("query")
+	userId := queryParams.Get("userId")
+
+	if err := s.db.Model(&activities).Where("name ILIKE ? AND User_id = ?", "%"+query+"%", userId).Find(&activities).Error; err != nil {
+		log.Println("search failed")
+		http.Error(w, "search failed", http.StatusBadRequest)
+		return
 	}
 
-	return activities, nil
+	helpers.SendJSONResponse(w, http.StatusOK, activities)
 }

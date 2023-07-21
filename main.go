@@ -1,6 +1,7 @@
 package main
 
 import (
+	"clockify/activities"
 	"clockify/projects"
 	"clockify/storage"
 	"clockify/users"
@@ -28,6 +29,7 @@ func main() {
 	router := mux.NewRouter()
 	users.UserSubrouter(router, db)
 	projects.ProjectSubrouter(router, db)
+	activities.UserSubrouter(router, db)
 
 	err1 := http.ListenAndServe(":8080", router)
 	if err1 != nil {
