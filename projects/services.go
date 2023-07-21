@@ -1,12 +1,15 @@
 package projects
 
 import (
+	"clockify/helpers"
 	"clockify/models"
-	"errors"
+	"encoding/json"
 	"log"
+	"net/http"
 
 	"clockify/types"
 
+	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
@@ -20,57 +23,100 @@ func NewProjectService(db *gorm.DB) *ProjectService {
 	}
 }
 
-func (s *ProjectService) GetAllProject() ([]models.Project, error) {
+func (s *ProjectService) GetAllProject(w http.ResponseWriter, r *http.Request) {
 	var projects []models.Project
 
 	if err := s.db.Model(&projects).Find(&projects).Error; err != nil {
-		log.Fatal(err)
-		return nil, err
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	return projects, nil
+	helpers.SendJSONResponse(w, http.StatusOK, projects)
 }
 
-func (s *ProjectService) CreateNewProject(proj types.Project) (bool, error) {
+func (s *ProjectService) CreateNewProject(w http.ResponseWriter, r *http.Request) {
+
+	var data map[string]interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	name := data["name"].(string)
+	clientName := data["clientName"].(string)
+	userId := data["userId"]
+
+	userIdInt, _ := helpers.ConvertValueIntoInt(userId)
+
 	projects := types.Project{
-		Name:       proj.Name,
-		ClientName: proj.ClientName,
-		UserId:     proj.UserId,
+		Name:       name,
+		ClientName: clientName,
+		UserId:     userIdInt,
 	}
 
-	if proj.Name == "" || proj.ClientName == "" {
-		return false, errors.New("empty field are not allowed")
+	log.Println(projects)
+
+	if name == "" || clientName == "" {
+		http.Error(w, "empty fields are not allowed", http.StatusBadRequest)
+		return
 	}
 
-	if !(proj.UserId > 0) {
-		panic("please login and then create project")
+	if !(userIdInt > 0) {
+		http.Error(w, "userid is missing", http.StatusBadRequest)
+		return
 	}
 
 	result := s.db.Model(&projects).Create(&projects)
 	if result.Error != nil {
-		panic("Failed to save data into the database!")
+		http.Error(w, "Failed to save data into the database!", http.StatusBadRequest)
+		return
 	}
+
 	log.Println("Project saved successfully!")
 
-	return true, nil
+	helpers.SendJSONResponse(w, http.StatusOK, result)
 }
 
-func (s *ProjectService) SearchProject(searchKeyword string, UserId int) ([]models.Project, error) {
+func (s *ProjectService) SearchProject(w http.ResponseWriter, r *http.Request) {
 	var project []models.Project
 
-	if err := s.db.Model(&project).Where("name ILIKE ? AND User_id = ?", "%"+searchKeyword+"%", UserId).Find(&project).Error; err != nil {
-		return project, errors.New("search failed")
+	queryParams := r.URL.Query()
+
+	// Access individual query parameters using Get() method
+	query := queryParams.Get("query")
+	userid := queryParams.Get("user")
+
+	if err := s.db.Model(&project).Where("name ILIKE ? AND User_id = ?", "%"+query+"%", userid).Find(&project).Error; err != nil {
+		log.Println("search failed")
+		http.Error(w, "search failed", http.StatusBadRequest)
+		return
 	}
 
-	return project, nil
+	helpers.SendJSONResponse(w, http.StatusOK, project)
 }
 
-func (s *ProjectService) DeleteProject(name string, UserId int) (bool, error) {
+func (s *ProjectService) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	var project []models.Project
 
-	if err := s.db.Model(&project).Where("User_id = ? AND name = ?", UserId, name).Delete(&project); err.Error != nil {
-		return false, errors.New("delete failed")
+	projectId := mux.Vars(r)["id"]
+
+	if projectId == "" {
+		log.Println("delete failed")
+		http.Error(w, "project id is empty", http.StatusBadRequest)
+		return
 	}
 
-	return true, nil
+	if err := s.db.Model(&project).Where("id = ?", projectId).Delete(&project); err.Error != nil {
+		log.Println("delete failed")
+		http.Error(w, "something went wrong", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("project delete sucessfully!")
+
+	helpers.SendJSONResponse(w, http.StatusNoContent, nil)
 }
