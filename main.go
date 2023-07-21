@@ -1,78 +1,38 @@
 package main
 
 import (
-	"clockify/helpers"
+	"clockify/activities"
+	"clockify/projects"
 	"clockify/storage"
-	"clockify/types"
 	"clockify/users"
-	"fmt"
 	"log"
-	"os"
+	"net/http"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	// load env values
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// database configurations
-	config := &storage.Config{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		Password: os.Getenv("DB_PASS"),
-		User:     os.Getenv("DB_USER"),
-		SSLMode:  os.Getenv("DB_SSLMODE"),
-		DBName:   os.Getenv("DB_NAME"),
-	}
+	config := storage.DataBaseConfig()
 
 	// create connections
-	db, err := storage.NewConnection(config)
+	db, err := storage.NewConnection(&config)
 	if err != nil {
 		log.Fatal("could not load the database")
 	}
 
-	log.Println(db)
-	// initialization services
-	userService := users.NewUserService(db)
-
-	// register user
-	creds := types.Credentials{
-		Email:    "mat12@gmail.com",
-		Password: "securepassword1",
-	}
-
-	helpers.FormatMessage("Register Service Started")
-
-	result, err := userService.RegisterUser(creds)
-	if err != nil {
-		fmt.Println("Error rise Register User ", err)
-	}
-
-	fmt.Println(result)
-
-	helpers.FormatMessage("Register Service Ended")
-
-	// login user
-	helpers.FormatMessage("Login Service Started")
-	creds = types.Credentials{
-		Email:    "mat1@gmail.com",
-		Password: "securepassword",
-	}
-	userService.LoginUser(creds)
-
-	helpers.FormatMessage("Login Service Ended")
-
-	// delete user
-	userService.DeleteUser(3)
-
 	// migration
-	// helpers.MigrateModels(db)
+	// helpers.MigrateTable(db)
 
-	app := fiber.New()
-	app.Listen(":8080")
+	// router configurations
+	router := mux.NewRouter()
+	users.UserSubrouter(router, db)
+	projects.ProjectSubrouter(router, db)
+	activities.UserSubrouter(router, db)
+
+	err1 := http.ListenAndServe(":8080", router)
+	if err1 != nil {
+		log.Fatalln("There's an error with the server,")
+	}
 }

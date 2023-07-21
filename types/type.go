@@ -14,3 +14,19 @@ type User struct {
 	CreatedAt time.Time
 	IsActive  bool
 }
+
+type Project struct {
+	Name       string
+	ClientName string
+	UserId     int
+	CreatedAt  time.Time
+}
+
+type Activities struct {
+	Name         string
+	TimeDuration time.Duration
+	StartTime    time.Time
+	EndTime      time.Time
+	ProjectId    int
+	UserId       int
+}
